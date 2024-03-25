@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>OneOS&#x4e2a;&#x4eba;&#x8bc4;&#x4ef7;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="oneos个人评价">OneOS个人评价</h1>
+<p>总体上讲，OneOS还是挺不错的。个人感觉当需要做一些综合性的项目，比如简单智能家居时会比较有优势，但更深入一些的就比较麻烦。归根结底，感觉应该是设计理念的原因，即设计的目的就是让写代码的可以从底层代码中解脱出来，只管调用封装好的接口就行，而不需要去了解具体是如何实现的，拿来能用就行，不能用就不管了。像智能家居类的项目就特别符合这种需求，本来每个做智能家居的与其把精力空耗在各个传感器怎么使用，还不如多捣鼓些更高层级的东西。而像机械臂这种本身与硬件关系十分紧密、换个舵机都可能得重新调代码的，封装后的接口反而束手束脚。</p>
+<h1 id="目前作品存在的问题">目前作品存在的问题</h1>
+<p>pwm输出有问题。完全按照OneOS官方文档调用的接口，但总感觉是它自己写的有点问题。之前改占空比都是直接调用hal库的setcompare函数，还没看过OneOS的代码是怎么写的，也不知道他们写成了啥样。输出肯定没问题，问题在于改占空比的那个瞬间。舵机一般固定周期，只修改占空比就行。我怀疑OneOS貌似只能周期、占空比一起重新配置，相当于每一次更改都是重新初始化一遍pwm输出，也就相当于截断了目前正在输出的波形。一般的使用其实没啥问题，但在机械臂上就比较麻烦，具体体现就是每次调用OneOS的pwm_config函数修改占空比，舵机都会短暂地往回抽动一下，原因应该就是重新初始化有个间隙，正好截断了当前正在输出的方波，舵机接收到截断了的波形比之前的少一截，就往回转了。目前我其实很想摆烂，真不想在折腾这个了，累了毁灭吧赶紧的。只能说大致有这么个想法，还无法确定是否真的就是这个的问题。如果真是的话那就改OneOS pwm驱动代码得了，不过总感觉有点与之前为了方便而使用OneOS的初衷背道而驰。</p>
+<h1 id="踩过的坑">踩过的坑</h1>
+<ol>
+<li>创建工程时需要选开发板，选了开发板后还需要自己去drivers-&gt;boot里面修改flash和ram大小。按道理讲既然都知道芯片型号了，flash和ram大小肯定是确定的，OneOS生成工程时应该自己帮我填了才对。而且按道理讲实现这个应该也不难，但不知道为什么就是得让用户手动填。只能说过度信赖不是什么好事。</li>
+<li>某些引脚/设备代码一切正常，但就是无法使用。其实是OneOS一些奇奇怪怪的组件偷偷占用了。比方说，你在cubemx里面关闭了i2c1和can，但实际上这两个默认是会被偷偷拿来用的。拿来干啥不清楚而且也不影响系统运行，坑就坑在它不告诉你这两个东西被他偷偷用了。记得drivers里面有个sn，有个block，文档完全没写是干啥的，不仔细看都不知道这两原来默认开启，但就是偷偷占用了i2c1和can的引脚。而且你开启can或i2c驱动时是正常的，不开启它就会偷偷拿来用，占用后没用任何输出、提示、报错等辅助信息，就纯靠你猜哪些引脚被偷偷拿来用了。当然，其实主要是文档的问题，它但凡写明白我就知道了，问题就是他还没写。</li>
+<li>还是文档问题，半数的设置选项文档都没说明具体作用，只能单看名字猜。但猜又不一定猜对，只能说靠运气。碰上有些相互关联但被设计在不同目录下的选项更是纯靠猜。</li>
+</ol>
+<h1 id="吐槽">吐槽</h1>
+<ol>
+<li>cubemx有点意义不明。估计是开发时主张脱离cubemx使用，但另一半的开发者又改不了这个习惯，所以最后做了个诡异的折中。最终结果就是硬件初始化一部分放在cubemx，一部分放在oneos cube，我又哪里知道哪些在这里哪些在那里？</li>
+<li>oneos cube排版有点乱。以shell为例，它的配置分开在kernel、debug、drivers、component四个目录下，要不是用过我哪知道分的这么开。搜索功能固然好，但每个配置项的名字与它所掌管的功能还是关系不大。比方说我不开debug功能就不能用shell组件，shell组件输出串口选择z在console选项下，这两个名字上都没和shell带半点关联。顺带一提，不开启debug但开启shell，shell的代码也会参与编译。</li>
+<li>有些奇怪的设置太能藏了。引脚被偷偷用了，行，我把偷偷用的那些设置给关了。但这可真是大工程，太难找了，像翻垃圾桶一样地翻，感觉好蠢。就应该设计一个只显示目前状态为开启的设置的界面。</li>
+</ol>
+
+        
+        
+    </body>
+    </html>
